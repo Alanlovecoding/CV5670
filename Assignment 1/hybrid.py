@@ -5,6 +5,23 @@ sys.path.append('/Users/kb/bin/opencv-3.1.0/build/lib/')
 import cv2
 import numpy as np
 
+def img2col(img, kernel):
+    m, n = kernel.shape
+    k1, k2 = (m - 1) / 2, (n - 1) / 2
+    a, b = img.shape
+    img_padd = np.zeros((a + 2 * k1, b + 2 * k2))
+    img_padd[k1: k1 + a, k2: k2 + b] = img
+    ret = np.zeros((a*b,m*n))
+    index = 0
+    for i in range(a):
+        for j in range(b):
+            grid = img_padd[i:2*k1+i+1,j:2*k2+j+1].reshape((m*n,))
+            ret[index] = grid
+            index += 1
+    kernel_t = kernel.reshape((m*n,))
+    return np.dot(ret,kernel_t).reshape((a,b))
+
+
 def cross_correlation_2d(img, kernel):
     '''Given a kernel of arbitrary m x n dimensions, with both m and n being
     odd, compute the cross correlation of the given image with the given
@@ -23,34 +40,14 @@ def cross_correlation_2d(img, kernel):
         Return an image of the same dimensions as the input image (same width,
         height and the number of color channels)
     '''
-    m, n = kernel.shape
-    k1, k2 = (m - 1) / 2, (n - 1) / 2
-    a = b = c = 1
-    if len(img.shape) > 2:
-        a, b, c = img.shape
-        img_padd = np.zeros((a + 2 * k1, b + 2 * k2, c))
-        img_padd[k1: k1 + a, k2: k2 + b, :] = img
-        ret = np.zeros((a, b, c))
-        for i in xrange(a):
-            for j in xrange(b):
-                tmp = np.zeros((c,))
-                for u in xrange(-k1, k1 + 1):
-                    for v in xrange(-k2, k2 + 1):
-                        tmp += img_padd[i + k1 + u, j + k2 + v, :] * kernel[u + k1, v + k2]
-                ret[i, j] = tmp
-        return ret
+
+    if len(img.shape) == 2:
+        return img2col(img, kernel)
     else:
-        a, b = img.shape
-        img_padd = np.zeros((a + 2 * k1, b + 2 * k2))
-        img_padd[k1: k1 + a, k2: k2 + b] = img
-        ret = np.zeros((a, b))
-        for i in xrange(a):
-            for j in xrange(b):
-                tmp = 0
-                for u in xrange(-k1, k1 + 1):
-                    for v in xrange(-k2, k2 + 1):
-                        tmp += img_padd[i + k1 + u, j + k2 + v] * kernel[u + k1, v + k2]
-                ret[i, j] = tmp
+        a,b,c = img.shape
+        ret = np.zeros((a,b,c))
+        for i in range(c):
+            ret[:,:,i] = img2col(img[:,:,i], kernel)
         return ret
 
 def kernel_flip(kernel):
