@@ -80,37 +80,37 @@ def accumulateBlend(img, acc, M, blendWidth):
     width = img.shape[1]
     height = img.shape[0]
     min_x, min_y, max_x, max_y = imageBoundingBox(img, M)
-    lumaScale = 1.0
-    cnt = 0
-
-    for ii in range(min_x, max_x-1):
-        for jj in range(min_y, max_y-1):
-            flag = False
-            p = np.array([[ii, jj, 1]]).T
-            p = np.dot(inv(M), p)
-            newx = int(p[0][0] / p[2][0])
-            newy = int(p[1][0] / p[2][0])
-            if newx >= 0 and newx < width and newy >= 0 and newy < height:
-                if acc[jj, ii, 0] == 0 and acc[jj, ii, 1] == 0 and acc[jj, ii, 2] == 0:
-                    flag = True
-                if img[newy, newx, 0] == 0 and img[newy, newx, 1] == 0 and img[newy, newx, 2] == 0:
-                    flag = True
-                if not flag:
-                    lumaAcc = 0.299 * acc[jj, ii, 0] + 0.587 * acc[jj, ii, 1] + 0.114 * acc[jj, ii, 2]
-                    lumaImg = 0.299 * img[newy, newx, 0] + 0.587 * img[newy, newx, 1] + 0.114 * img[newy, newx, 2]
-
-                    if lumaImg != 0:
-                        scale = lumaAcc / lumaImg
-                        if scale > 0.5 and scale < 2:
-                            lumaScale += lumaAcc / lumaImg
-                            cnt += 1
-
-    if cnt != 0:
-        lumaScale = lumaScale / float(cnt)
-    else:
-        lumaScale = 1.0
-
-    weight = 0.0
+    # lumaScale = 1.0
+    # cnt = 0
+    #
+    # for ii in range(min_x, max_x-1):
+    #     for jj in range(min_y, max_y-1):
+    #         flag = False
+    #         p = np.array([[ii, jj, 1]]).T
+    #         p = np.dot(inv(M), p)
+    #         newx = int(p[0][0] / p[2][0])
+    #         newy = int(p[1][0] / p[2][0])
+    #         if newx >= 0 and newx < width and newy >= 0 and newy < height:
+    #             if acc[jj, ii, 0] == 0 and acc[jj, ii, 1] == 0 and acc[jj, ii, 2] == 0:
+    #                 flag = True
+    #             if img[newy, newx, 0] == 0 and img[newy, newx, 1] == 0 and img[newy, newx, 2] == 0:
+    #                 flag = True
+    #             if not flag:
+    #                 lumaAcc = 0.299 * acc[jj, ii, 0] + 0.587 * acc[jj, ii, 1] + 0.114 * acc[jj, ii, 2]
+    #                 lumaImg = 0.299 * img[newy, newx, 0] + 0.587 * img[newy, newx, 1] + 0.114 * img[newy, newx, 2]
+    #
+    #                 if lumaImg != 0:
+    #                     scale = lumaAcc / lumaImg
+    #                     if scale > 0.5 and scale < 2:
+    #                         lumaScale += lumaAcc / lumaImg
+    #                         cnt += 1
+    #
+    # if cnt != 0:
+    #     lumaScale = lumaScale / float(cnt)
+    # else:
+    #     lumaScale = 1.0
+    #
+    # weight = 0.0
 
     for ii in range(min_x, max_x):
         for jj in range(min_y, max_y):
@@ -120,11 +120,12 @@ def accumulateBlend(img, acc, M, blendWidth):
             newy = int(p[1][0] / p[2][0])
             if newx >= 0 and newx < width - 1 and newy >= 0 and newy < height - 1:
                 weight = 1.0
+                c1, c2 = 2**31, 2**31
                 if ii >= min_x and ii < min_x + blendWidth:
-                    weight = (ii - min_x) / blendWidth
-                if ii <= max_x  and ii > (max_x - blendWidth):
-                    weight = (max_x - ii) / blendWidth
-
+                    c1 = float(ii - min_x) / blendWidth
+                if ii <= max_x and ii > max_x - blendWidth:
+                    c2 = float(max_x - ii) / blendWidth
+                weight = min(c1, weight, c2)
                 if img[newy, newx, 0] == 0 and img[newy, newx, 1] == 0 and img[newy, newx, 2] == 0:
                     weight = 0.0
 
@@ -132,13 +133,13 @@ def accumulateBlend(img, acc, M, blendWidth):
                 G = img[newy, newx, 1]
                 B = img[newy, newx, 2]
 
-                r = 255.0 if R * lumaScale > 255.0 else R * lumaScale
-                g = 255.0 if G * lumaScale > 255.0 else G * lumaScale
-                b = 255.0 if B * lumaScale > 255.0 else B * lumaScale
+                # r = 255.0 if R * lumaScale > 255.0 else R * lumaScale
+                # g = 255.0 if G * lumaScale > 255.0 else G * lumaScale
+                # b = 255.0 if B * lumaScale > 255.0 else B * lumaScale
 
-                acc[jj, ii, 0] += r * weight
-                acc[jj, ii, 1] += g * weight
-                acc[jj, ii, 2] += b * weight
+                acc[jj, ii, 0] += R * weight
+                acc[jj, ii, 1] += G * weight
+                acc[jj, ii, 2] += B * weight
                 acc[jj, ii, 3] += weight
     #TODO-BLOCK-END
     # END TODO
@@ -288,17 +289,7 @@ def blendImages(ipv, blendWidth, is360=False, A_out=None):
     #TODO-BLOCK-BEGIN
     k = 0
     if is360:
-        if x_init > x_final:
-            x_init, x_final = x_final, x_init
-        k = -(y_final - y_init) / (x_final - x_init)
-        AA = np.array([[1,0,0],
-                       [k,1,0],
-                       [0,0,1]])
-        A = AA
-        AA = np.array([[1, 0, 0],
-                       [0, float(ipv[0].shape[0]) / accHeight, 0],
-                       [0, 0, 1]])
-        A = np.dot(A, AA)
+        A = computeDrift(x_init, y_init, x_final, y_final, width)
     #TODO-BLOCK-END
     # END TODO
 

@@ -55,7 +55,7 @@ def computeSphericalWarpMappings(dstShape, f, k1, k2):
     # (x,y) is the spherical image coordinates.
     # (xf,yf) is the spherical coordinates, e.g., xf is the angle theta
     # and yf is the angle phi
-    one = np.ones((dstShape[0],dstShape[1]))
+    one = np.ones((dstShape[0], dstShape[1]))
     xf = one * np.arange(dstShape[1])
     yf = one.T * np.arange(dstShape[0])
     yf = yf.T
@@ -78,9 +78,9 @@ def computeSphericalWarpMappings(dstShape, f, k1, k2):
     x_ = a / c
     y_ = b / c
 
-    r = x_ * x_ + y_ * y_
-    xt = x_ + k1 * r + k2 * r * r
-    yt = y_ + k1 * r + k2 * r * r
+    r = x_ ** 2 + y_ ** 2
+    xt = x_ * (1 + k1 * r + k2 * r * r)
+    yt = y_ * (1 + k1 * r + k2 * r * r)
 
     # TODO-BLOCK-END
     # END TODO
