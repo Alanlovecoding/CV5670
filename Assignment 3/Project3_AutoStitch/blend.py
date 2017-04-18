@@ -80,37 +80,6 @@ def accumulateBlend(img, acc, M, blendWidth):
     width = img.shape[1]
     height = img.shape[0]
     min_x, min_y, max_x, max_y = imageBoundingBox(img, M)
-    # lumaScale = 1.0
-    # cnt = 0
-    #
-    # for ii in range(min_x, max_x-1):
-    #     for jj in range(min_y, max_y-1):
-    #         flag = False
-    #         p = np.array([[ii, jj, 1]]).T
-    #         p = np.dot(inv(M), p)
-    #         newx = int(p[0][0] / p[2][0])
-    #         newy = int(p[1][0] / p[2][0])
-    #         if newx >= 0 and newx < width and newy >= 0 and newy < height:
-    #             if acc[jj, ii, 0] == 0 and acc[jj, ii, 1] == 0 and acc[jj, ii, 2] == 0:
-    #                 flag = True
-    #             if img[newy, newx, 0] == 0 and img[newy, newx, 1] == 0 and img[newy, newx, 2] == 0:
-    #                 flag = True
-    #             if not flag:
-    #                 lumaAcc = 0.299 * acc[jj, ii, 0] + 0.587 * acc[jj, ii, 1] + 0.114 * acc[jj, ii, 2]
-    #                 lumaImg = 0.299 * img[newy, newx, 0] + 0.587 * img[newy, newx, 1] + 0.114 * img[newy, newx, 2]
-    #
-    #                 if lumaImg != 0:
-    #                     scale = lumaAcc / lumaImg
-    #                     if scale > 0.5 and scale < 2:
-    #                         lumaScale += lumaAcc / lumaImg
-    #                         cnt += 1
-    #
-    # if cnt != 0:
-    #     lumaScale = lumaScale / float(cnt)
-    # else:
-    #     lumaScale = 1.0
-    #
-    # weight = 0.0
 
     for ii in range(min_x, max_x):
         for jj in range(min_y, max_y):
@@ -132,10 +101,6 @@ def accumulateBlend(img, acc, M, blendWidth):
                 R = img[newy, newx, 0]
                 G = img[newy, newx, 1]
                 B = img[newy, newx, 2]
-
-                # r = 255.0 if R * lumaScale > 255.0 else R * lumaScale
-                # g = 255.0 if G * lumaScale > 255.0 else G * lumaScale
-                # b = 255.0 if B * lumaScale > 255.0 else B * lumaScale
 
                 acc[jj, ii, 0] += R * weight
                 acc[jj, ii, 1] += G * weight
